@@ -38,16 +38,7 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir tensorrt-llm==0.18.2 --extra-index-url https://pypi.nvidia.com
 
 # Patch tensorrt_llm for transformers 5.x compatibility
-RUN python3 -c "
-import pathlib, re
-p = pathlib.Path('/usr/local/lib/python3.10/dist-packages/tensorrt_llm/models/gpt/convert.py')
-t = p.read_text()
-t = re.sub(r'AutoModelForVision2Seq,\s*', '', t, count=1)
-t = t.replace('AutoModelForVision2Seq', 'None')
-p.write_text(t)
-compile(t, 'convert.py', 'exec')
-print('PATCH OK: convert.py compiles')
-"
+RUN python3 -c 'import pathlib, re; p = pathlib.Path("/usr/local/lib/python3.10/dist-packages/tensorrt_llm/models/gpt/convert.py"); t = p.read_text(); t = re.sub(r"AutoModelForVision2Seq,\s*", "", t, count=1); t = t.replace("AutoModelForVision2Seq", "None"); p.write_text(t); compile(t, "convert.py", "exec"); print("PATCH OK")'
 
 # Install project dependencies
 RUN pip install --no-cache-dir \
