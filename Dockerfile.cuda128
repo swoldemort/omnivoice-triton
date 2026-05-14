@@ -1,0 +1,67 @@
+# Multi-stage build for OmniVoice Triton with TensorRT-LLM on CUDA 12.8
+# 
+# IMPORTANT: TensorRT-LLM 0.18.2 wheel is compiled against PyTorch 2.6.0+cu124.
+# Do NOT upgrade PyTorch to 2.11+cu128 — it will break the TRT-LLM C++ bindings.
+#
+# Build:
+#   docker build -f Dockerfile.cuda128 -t omnivoice-triton:trtllm-cuda128 .
+# Run (with GPU):
+#   docker run --rm --device nvidia.com/gpu=all \
+#     -v $(pwd):/app -v /tmp/hf_cache:/root/.cache/huggingface \
+#     -w /app omnivoice-triton:trtllm-cuda128 \
+#     python -m omnivoice_triton.models.trtllm.build_engine \
+#       --model_dir k2-fsa/OmniVoice --output_dir /tmp/trtllm_engine
+
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV HF_HOME=/root/.cache/huggingface
+
+# Install build tools + Python 3.10 (Ubuntu 22.04 default)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    libopenmpi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip
+
+# Install PyTorch 2.6.0 + CUDA 12.4 (compatible with TRT-LLM 0.18.2)
+RUN pip install --no-cache-dir \
+    torch==2.6.0 torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# Install TensorRT-LLM 0.18.2
+RUN pip install --no-cache-dir tensorrt-llm==0.18.2 --extra-index-url https://pypi.nvidia.com
+
+# Patch tensorrt_llm for transformers 5.x compatibility
+RUN python3 -c "
+import pathlib, re
+p = pathlib.Path('/usr/local/lib/python3.10/dist-packages/tensorrt_llm/models/gpt/convert.py')
+t = p.read_text()
+t = re.sub(r'AutoModelForVision2Seq,\s*', '', t, count=1)
+t = t.replace('AutoModelForVision2Seq', 'None')
+p.write_text(t)
+compile(t, 'convert.py', 'exec')
+print('PATCH OK: convert.py compiles')
+"
+
+# Install project dependencies
+RUN pip install --no-cache-dir \
+    transformers>=5.3.0 accelerate safetensors \
+    omnivoice soundfile sageattention huggingface-hub
+
+WORKDIR /app
+
+# Copy source code
+COPY src/ ./src/
+COPY tests/ ./tests/
+COPY scripts/ ./scripts/
+COPY benchmark/ ./benchmark/
+
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+
+CMD ["python", "-m", "omnivoice_triton.server"]

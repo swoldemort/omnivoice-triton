@@ -5,10 +5,12 @@ from omnivoice_triton.models.faster_runner import FasterRunner
 from omnivoice_triton.models.patching import apply_sage_attention, apply_triton_kernels
 from omnivoice_triton.models.triton_faster_runner import TritonFasterRunner
 from omnivoice_triton.models.triton_runner import TritonRunner
+from omnivoice_triton.models.trtllm_runner import TRTLLMRunner
 
 __all__ = [
     "BaseRunner",
     "FasterRunner",
+    "TRTLLMRunner",
     "TritonRunner",
     "TritonFasterRunner",
     "apply_triton_kernels",
@@ -23,6 +25,7 @@ _RUNNER_MAP: dict[str, type] = {
     "triton": TritonRunner,
     "faster": FasterRunner,
     "hybrid": TritonFasterRunner,
+    "trtllm": TRTLLMRunner,
 }
 
 ALL_RUNNER_NAMES: list[str] = [
@@ -30,6 +33,7 @@ ALL_RUNNER_NAMES: list[str] = [
     "triton",
     "faster",
     "hybrid",
+    "trtllm",
 ]
 
 
