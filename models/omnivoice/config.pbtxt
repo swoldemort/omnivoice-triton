@@ -1,0 +1,93 @@
+name: "omnivoice"
+backend: "python"
+max_batch_size: 32
+
+dynamic_batching {
+  preferred_batch_size: [ 4, 8, 16, 32 ]
+  max_queue_delay_microseconds: 50000
+  preserve_ordering: false
+}
+
+input [
+  {
+    name: "text"
+    data_type: TYPE_STRING
+    dims: [1]
+  },
+  {
+    name: "ref_audio"
+    data_type: TYPE_STRING
+    dims: [1]
+    optional: true
+  },
+  {
+    name: "ref_text"
+    data_type: TYPE_STRING
+    dims: [1]
+    optional: true
+  },
+  {
+    name: "instruct"
+    data_type: TYPE_STRING
+    dims: [1]
+    optional: true
+  },
+  {
+    name: "language"
+    data_type: TYPE_STRING
+    dims: [1]
+    optional: true
+  },
+  {
+    name: "duration"
+    data_type: TYPE_FP32
+    dims: [1]
+    optional: true
+  },
+  {
+    name: "speed"
+    data_type: TYPE_FP32
+    dims: [1]
+    optional: true
+  }
+]
+
+output [
+  {
+    name: "audio"
+    data_type: TYPE_FP32
+    dims: [-1]
+  },
+  {
+    name: "sample_rate"
+    data_type: TYPE_INT32
+    dims: [1]
+  }
+]
+
+instance_group [
+  {
+    count: 1
+    kind: KIND_GPU
+    gpus: [0]
+  }
+]
+
+parameters: {
+  key: "num_steps"
+  value: {
+    string_value: "16"
+  }
+}
+parameters: {
+  key: "model_name_or_path"
+  value: {
+    string_value: "k2-fsa/OmniVoice"
+  }
+}
+parameters: {
+  key: "load_asr"
+  value: {
+    string_value: "true"
+  }
+}

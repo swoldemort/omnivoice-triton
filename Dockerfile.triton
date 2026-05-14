@@ -1,0 +1,26 @@
+FROM nvcr.io/nvidia/tritonserver:25.03-py3
+
+# Install system dependencies for audio processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch for CUDA 12.8 (compatible with Triton 25.03 base image)
+RUN pip install --no-cache-dir \
+    torch==2.8.0 \
+    torchaudio==2.8.0 \
+    --index-url https://download.pytorch.org/whl/cu128
+
+# Install OmniVoice and supporting libraries
+RUN pip install --no-cache-dir \
+    omnivoice \
+    transformers>=4.50.0 \
+    soundfile \
+    numpy
+
+# Copy model repository
+COPY models /models
+
+# Default Triton command
+CMD ["tritonserver", "--model-repository=/models", "--strict-model-config=false", "--log-verbose=1"]

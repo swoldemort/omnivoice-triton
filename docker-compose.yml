@@ -1,0 +1,37 @@
+services:
+  triton:
+    build:
+      context: .
+      dockerfile: Dockerfile.triton
+    image: omnivoice-triton:latest
+    container_name: omnivoice-triton
+    ports:
+      - "8000:8000"   # HTTP
+      - "8001:8001"   # gRPC
+      - "8002:8002"   # Metrics
+    volumes:
+      - ./models:/models:ro
+      - huggingface_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - HF_HOME=/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    shm_size: 8g
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+volumes:
+  huggingface_cache:
