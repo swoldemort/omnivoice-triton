@@ -106,8 +106,15 @@ class TRTLLMRunner(BaseRunner):
         from omnivoice_triton.models.trtllm.build_engine import build_engine
         import argparse
 
+        # Resolve local model path for HF IDs
+        if os.path.isdir(self.model_id):
+            local_model_dir = self.model_id
+        else:
+            from huggingface_hub import snapshot_download
+            local_model_dir = snapshot_download(self.model_id)
+
         args = argparse.Namespace(
-            model_dir=self.model_id,
+            model_dir=local_model_dir,
             output_dir=self._engine_dir,
             checkpoint_dir="/tmp/trtllm_ckpt",
             dtype="float16" if self.dtype == torch.float16 else "bfloat16" if self.dtype == torch.bfloat16 else "float32",
