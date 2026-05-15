@@ -12,6 +12,7 @@ services:
     volumes:
       - ./models:/models:ro
       - huggingface_cache:/root/.cache/huggingface
+      - /mnt/hdd:/mnt/hdd
     deploy:
       resources:
         reservations:
@@ -19,9 +20,19 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    env_file:
+      - .env
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - HF_HOME=/root/.cache/huggingface
+      - REDIS_HOST=192.168.1.190
+      - REDIS_PORT=6379
+    command:
+      - "tritonserver"
+      - "--model-repository=/models"
+      - "--strict-model-config=false"
+      - "--log-verbose=1"
+      - "--cache-config=local,size=1073741824"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
       interval: 30s

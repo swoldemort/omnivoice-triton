@@ -17,7 +17,10 @@ RUN pip install --no-cache-dir \
     omnivoice \
     transformers>=4.50.0 \
     soundfile \
-    numpy
+    numpy \
+    boto3 \
+    redis \
+    speechbrain
 
 # Copy model repository
 COPY models /models

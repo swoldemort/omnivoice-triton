@@ -73,6 +73,10 @@ instance_group [
   }
 ]
 
+response_cache {
+  enable: true
+}
+
 parameters: {
   key: "num_steps"
   value: {
